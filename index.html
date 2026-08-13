@@ -67,7 +67,7 @@
         <div class="user-chip" id="currentUserLabel"></div>
         <div class="quick-actions">
           <button class="add-btn" id="openAddBtn" title="إضافة حدث جديد" aria-label="إضافة حدث جديد">+</button>
-          <button class="btn btn-secondary" id="backupBtn" type="button">💾 النسخ</button>
+          
           <button class="btn btn-secondary" id="accountBtn" type="button">👤 حسابي</button>
           <button class="btn btn-secondary" id="adminUsersBtn" type="button" style="display:none;">👥 الإدارة <span class="admin-badge" id="adminPendingBadge" style="display:none;">0</span></button>
         </div>
@@ -326,6 +326,77 @@
       </div>
     </div>
   </div>
+  <!-- مودال الإعدادات -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h2>⚙️ الإعدادات</h2>
+
+    <div class="account-actions">
+      <button class="btn btn-secondary" id="settingsBackupBtn">
+        💾 النسخ الاحتياطي والاستعادة
+      </button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" id="settingsClose">إغلاق</button>
+    </div>
+  </div>
+</div>
+<!-- مودال حساب البعد الزمني -->
+<div class="modal-bg" id="timeDistanceModal">
+  <div class="modal">
+    <h2>↔️ حساب البعد الزمني</h2>
+
+    <div class="tabs" style="margin-bottom:14px;">
+      <button class="tab active" id="timeModeEventsBtn" type="button">
+        بين حدثين
+      </button>
+
+      <button class="tab" id="timeModeDatesBtn" type="button">
+        بين تاريخين
+      </button>
+    </div>
+
+    <div id="timeEventsSection">
+      <div class="form-grid">
+        <label>
+          الحدث الأول
+          <select id="timeEvent1"></select>
+        </label>
+        <div class="date-help" id="timeEvent1Date"></div>
+
+        <label>
+          الحدث الثاني
+          <select id="timeEvent2"></select>
+        </label>
+        <div class="date-help" id="timeEvent2Date"></div>
+      </div>
+    </div>
+
+    <div id="timeDatesSection" style="display:none;">
+      <div class="form-grid">
+        <label>
+          التاريخ الأول
+          <input type="date" id="timeDate1">
+        </label>
+
+        <label>
+          التاريخ الثاني
+          <input type="date" id="timeDate2">
+        </label>
+      </div>
+    </div>
+
+    <div class="empty" id="timeDistanceResult" style="margin-top:14px;padding:18px;">
+      اختر حدثين أو تاريخين لحساب المدة.
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" id="timeDistanceClose">إغلاق</button>
+      <button class="btn btn-primary" id="timeDistanceCalc">احسب المدة</button>
+    </div>
+  </div>
+</div>
 
   <div class="toast" id="toast"></div>
 </div>
@@ -338,7 +409,7 @@
 <script src="config.js"></script>
   
 <!-- Main Application -->
-<script src="app.js"></script>
+<script src="app.js" defer></script>
 <!-- الشريط السفلي -->
 <nav class="bottom-bar" id="bottomBar" style="display:none;">
 
@@ -350,13 +421,23 @@
     SA
 </button>
 
-    <button class="bottom-btn" disabled title="قريبًا">
-        ⚙️
-    </button>
+    <button
+    class="bottom-btn"
+    id="settingsBottomBtn"
+    type="button"
+    title="الإعدادات"
+    aria-label="الإعدادات">
+    ⚙️
+</button>
 
-    <button class="bottom-btn" disabled title="قريبًا">
-        📊
-    </button>
+    <button
+    class="bottom-btn"
+    id="timeDistanceBottomBtn"
+    type="button"
+    title="حساب البعد الزمني"
+    aria-label="حساب البعد الزمني">
+    ↔️
+</button>
 
     <button class="bottom-btn" disabled title="قريبًا">
         🔔

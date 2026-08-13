@@ -305,7 +305,11 @@ function roleLabel(role){
   return '👤 خاص';
 }
 function eventTypeIcon(ev){
-  if(ev?.tag === 'sa') return ev.title?.startsWith('🌙') ? '🌙' : '🇸🇦';
+  if(ev?.tag === 'sa'){
+    if(ev.saGroup === 'school') return '🎓';
+    if(ev.saGroup === 'salary') return '💰';
+    return ev.title?.startsWith('🌙') ? '🌙' : '🇸🇦';
+  }
   if(ev?.isShared || ev?.type === 'sharedRef') return '👥';
   return '📅';
 }
@@ -801,10 +805,142 @@ $('accountBtn').addEventListener('click', ()=>{
 $('accountClose').addEventListener('click', ()=> $('accountModal').classList.remove('show'));
 $('accountModal').addEventListener('click', e=>{ if(e.target.id==='accountModal') $('accountModal').classList.remove('show'); });
 
-$('backupBtn').addEventListener('click', ()=>{
+
+
+$('settingsBottomBtn').addEventListener('click', ()=>{
+  $('settingsModal').classList.add('show');
+});
+
+$('settingsClose').addEventListener('click', ()=>{
+  $('settingsModal').classList.remove('show');
+});
+$('settingsBackupBtn').addEventListener('click', ()=>{
+  $('settingsModal').classList.remove('show');
   refreshBackupList();
   $('backupModal').classList.add('show');
 });
+$('settingsModal').addEventListener('click', e=>{
+  if(e.target.id === 'settingsModal'){
+    $('settingsModal').classList.remove('show');
+  }
+});
+function refreshTimeDistanceEvents(){
+  const select1 = $('timeEvent1');
+  const select2 = $('timeEvent2');
+  if(!select1 || !select2) return;
+
+  const events = getDisplayEvents()
+    .filter(Boolean)
+    .sort((a,b)=> eventToGregDate(b) - eventToGregDate(a));
+
+  const options = events.map(ev=>{
+    return `<option value="${ev.id}">${escapeHtml(ev.title)}</option>`;
+  }).join('');
+
+  select1.innerHTML = `<option value="">اختر الحدث الأول</option>${options}`;
+  select2.innerHTML = `<option value="">اختر الحدث الثاني</option>${options}`;
+
+  $('timeEvent1Date').textContent = '';
+  $('timeEvent2Date').textContent = '';
+}
+
+function updateTimeEventDate(selectId, outputId){
+  const select = $(selectId);
+  const output = $(outputId);
+  if(!select || !output) return;
+
+  const ev = getDisplayEvents().find(e => e.id === select.value);
+  if(!ev){
+    output.textContent = '';
+    return;
+  }
+
+  const d = eventToGregDate(ev);
+  output.textContent = `التاريخ: ${d.getDate()} ${arMonths[d.getMonth()]} ${d.getFullYear()} م`;
+}
+
+$('timeEvent1').addEventListener('change', ()=>{
+  updateTimeEventDate('timeEvent1', 'timeEvent1Date');
+});
+
+$('timeEvent2').addEventListener('change', ()=>{
+  updateTimeEventDate('timeEvent2', 'timeEvent2Date');
+});
+
+$('timeModeEventsBtn').addEventListener('click', ()=>{
+  $('timeModeEventsBtn').classList.add('active');
+  $('timeModeDatesBtn').classList.remove('active');
+  $('timeEventsSection').style.display = '';
+  $('timeDatesSection').style.display = 'none';
+  $('timeDistanceResult').textContent = 'اختر حدثين أو تاريخين لحساب المدة.';
+});
+
+$('timeModeDatesBtn').addEventListener('click', ()=>{
+  $('timeModeDatesBtn').classList.add('active');
+  $('timeModeEventsBtn').classList.remove('active');
+  $('timeEventsSection').style.display = 'none';
+  $('timeDatesSection').style.display = '';
+  $('timeDistanceResult').textContent = 'اختر تاريخين لحساب المدة.';
+});
+
+$('timeDistanceCalc').addEventListener('click', ()=>{
+  const datesMode = $('timeModeDatesBtn').classList.contains('active');
+
+  if(datesMode){
+    const v1 = $('timeDate1').value;
+    const v2 = $('timeDate2').value;
+
+    if(!v1 || !v2){
+      $('timeDistanceResult').textContent = 'اختر التاريخين أولاً.';
+      return;
+    }
+
+    const [y1,m1,d1] = v1.split('-').map(Number);
+    const [y2,m2,d2] = v2.split('-').map(Number);
+
+    const date1 = new Date(y1, m1 - 1, d1);
+    const date2 = new Date(y2, m2 - 1, d2);
+
+    $('timeDistanceResult').textContent = fmtYMD(diffYMD(date1, date2));
+    return;
+  }
+
+  const ev1 = getDisplayEvents().find(e => e.id === $('timeEvent1').value);
+  const ev2 = getDisplayEvents().find(e => e.id === $('timeEvent2').value);
+
+  if(!ev1 || !ev2){
+    $('timeDistanceResult').textContent = 'اختر الحدثين أولاً.';
+    return;
+  }
+
+  const d1 = eventToGregDate(ev1);
+  const d2 = eventToGregDate(ev2);
+
+  $('timeDistanceResult').textContent = fmtYMD(diffYMD(d1, d2));
+});
+
+$('timeDistanceBottomBtn').addEventListener('click', ()=>{
+  refreshTimeDistanceEvents();
+
+  $('timeModeEventsBtn').classList.add('active');
+  $('timeModeDatesBtn').classList.remove('active');
+  $('timeEventsSection').style.display = '';
+  $('timeDatesSection').style.display = 'none';
+
+  $('timeDistanceResult').textContent = 'اختر حدثين أو تاريخين لحساب المدة.';
+  $('timeDistanceModal').classList.add('show');
+});
+
+$('timeDistanceClose').addEventListener('click', ()=>{
+  $('timeDistanceModal').classList.remove('show');
+});
+
+$('timeDistanceModal').addEventListener('click', e=>{
+  if(e.target.id === 'timeDistanceModal'){
+    $('timeDistanceModal').classList.remove('show');
+  }
+});
+
 $('backupClose').addEventListener('click', ()=> $('backupModal').classList.remove('show'));
 $('backupModal').addEventListener('click', e=>{ if(e.target.id==='backupModal') $('backupModal').classList.remove('show'); });
 $('saClose').addEventListener('click', ()=> $('saModal').classList.remove('show'));
@@ -2169,6 +2305,29 @@ const SA_HIJRI = [
   { md:'12-13', title:'عيد الأضحى المبارك — اليوم الرابع' },
 ];
 
+/* التقويم الدراسي للتعليم العام 1448-1449هـ / 2026-2027م
+   مخصص للتقويم العام (غير تقاويم الجامعات).
+   التواريخ التالية تحفظ كأحداث سعودية مستقلة يمكن حذفها دون المساس بالأحداث الشخصية. */
+const SA_SCHOOL_2026_2027 = [
+  { date:'2026-08-23', title:'بداية العام الدراسي 1448-1449هـ' },
+  { date:'2026-11-20', title:'بداية إجازة الخريف' },
+  { date:'2026-11-29', title:'العودة للدراسة بعد إجازة الخريف' },
+  { date:'2027-01-08', title:'بداية إجازة منتصف العام الدراسي' },
+  { date:'2027-01-17', title:'العودة للدراسة بعد إجازة منتصف العام' },
+  { date:'2027-02-26', title:'بداية إجازة عيد الفطر للمدارس' },
+  { date:'2027-03-14', title:'العودة للدراسة بعد إجازة عيد الفطر' },
+  { date:'2027-05-07', title:'بداية إجازة عيد الأضحى للمدارس' },
+  { date:'2027-05-23', title:'العودة للدراسة بعد إجازة عيد الأضحى' },
+  { date:'2027-06-24', title:'بداية إجازة نهاية العام الدراسي' },
+];
+
+/* مواعيد صرف الرواتب الحكومية الرسمية المنشورة لعام 2026م. */
+const SA_SALARY_2026 = [
+  '2026-01-27','2026-02-26','2026-03-26','2026-04-27',
+  '2026-05-24','2026-06-28','2026-07-27','2026-08-27',
+  '2026-09-27','2026-10-27','2026-11-26','2026-12-27'
+];
+
 function buildSaudiEvents(years=3){
   const out = [];
   const today = new Date();
@@ -2179,16 +2338,17 @@ function buildSaudiEvents(years=3){
     const gY = curG + i;
     for(const it of SA_GREG){
       const [m,d] = it.md.split('-').map(Number);
-      const dt = new Date(gY, m-1, d);
       out.push({
         id:`sa_${gY}_${it.md}`,
         title:`🇸🇦 ${it.title}`,
         calType:'greg',
         date:`${gY}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,
         tag:'sa',
+        saGroup:'national',
         createdAt:new Date().toISOString()
       });
     }
+
     const hY = curH + i;
     for(const it of SA_HIJRI){
       const [hm,hd] = it.md.split('-').map(Number);
@@ -2201,6 +2361,7 @@ function buildSaudiEvents(years=3){
         calType:'hijri',
         date:ds,
         tag:'sa',
+        saGroup:'national',
         createdAt:new Date().toISOString()
       });
     }
@@ -2208,35 +2369,152 @@ function buildSaudiEvents(years=3){
   return out;
 }
 
+function buildSaudiSchoolEvents(){
+  return SA_SCHOOL_2026_2027.map((it, idx)=>({
+    id:`sa_school_1448_1449_${idx+1}`,
+    title:`🎓 ${it.title}`,
+    calType:'greg',
+    date:it.date,
+    tag:'sa',
+    saGroup:'school',
+    createdAt:new Date().toISOString()
+  }));
+}
+
+function buildSaudiSalaryEvents(){
+  return SA_SALARY_2026.map((date, idx)=>({
+    id:`sa_salary_2026_${String(idx+1).padStart(2,'0')}`,
+    title:`💰 موعد صرف الراتب — ${arMonths[idx]} 2026`,
+    calType:'greg',
+    date,
+    tag:'sa',
+    saGroup:'salary',
+    createdAt:new Date().toISOString()
+  }));
+}
+
+function saEventGroup(ev){
+  if(ev?.tag !== 'sa') return '';
+  /* دعم المناسبات القديمة التي كانت تحمل tag:'sa' فقط */
+  return ev.saGroup || 'national';
+}
+
+function getSaudiSelectedGroups(){
+  return ['national','school','salary'].filter(group=>{
+    const el = $(`saOpt_${group}`);
+    return !!el?.checked;
+  });
+}
+
+function initSaudiOptionsUI(){
+  const modal = $('saModal');
+  const actions = modal?.querySelector('.sa-actions');
+  if(!modal || !actions || $('saOptionsBox')) return;
+
+  const box = document.createElement('div');
+  box.id = 'saOptionsBox';
+  box.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:10px 0 14px;padding:12px;background:var(--card-2);border:1px solid var(--border);border-radius:12px;';
+  box.innerHTML = `
+    <div style="font-weight:800;color:var(--text);margin-bottom:2px;">اختر ما تريد إضافته أو إزالته</div>
+
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text);">
+      <input id="saOpt_national" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent);">
+      <span>🇸🇦 المناسبات الوطنية والدينية</span>
+    </label>
+
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text);">
+      <input id="saOpt_school" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent);">
+      <span>🎓 التقويم الدراسي للمدارس</span>
+    </label>
+
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text);">
+      <input id="saOpt_salary" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--accent);">
+      <span>💰 مواعيد الرواتب الحكومية 2026</span>
+    </label>
+
+    <div style="color:var(--muted);font-size:.78rem;line-height:1.7;margin-top:3px;">
+      الإضافة والإزالة تطبق فقط على الأقسام المحددة، ولا تؤثر على أحداثك الشخصية أو المشتركة.
+    </div>
+  `;
+  actions.parentNode.insertBefore(box, actions);
+
+  const importBtn = $('saImport');
+  const removeBtn = $('saRemove');
+  if(importBtn) importBtn.textContent = 'استيراد المحدد';
+  if(removeBtn) removeBtn.textContent = 'إزالة المحدد';
+}
+
 $('saImport').addEventListener('click', async ()=>{
+  const groups = getSaudiSelectedGroups();
+  if(!groups.length){
+    toast('حدد قسماً واحداً على الأقل للاستيراد','err');
+    return;
+  }
+
+  const labels = {
+    national:'المناسبات الوطنية والدينية',
+    school:'التقويم الدراسي',
+    salary:'مواعيد الرواتب'
+  };
+
   const ok = await confirmDialog({
     title:'استيراد المناسبات السعودية',
-    message:'سيتم إضافة المناسبات الوطنية والدينية للسنة الحالية. أي مناسبات سعودية مستوردة سابقاً سيتم استبدالها بالنسخة المحدّثة.',
+    message:`سيتم تحديث الأقسام المحددة فقط: ${groups.map(g=>labels[g]).join('، ')}. أحداثك الشخصية لن تتأثر.`,
     okText:'استيراد',
     danger:false
   });
   if(!ok) return;
-  const evts = loadEvents().filter(x => x.tag !== 'sa');
-  const sa   = buildSaudiEvents(1);
-  saveEvents([...evts, ...sa]);
+
+  /* نحذف فقط النسخ السعودية السابقة التابعة للأقسام المحددة،
+     ثم نعيد إنشاء تلك الأقسام. الأحداث الشخصية والمشتركة لا تمس. */
+  const remaining = loadEvents().filter(ev=>{
+    if(ev?.tag !== 'sa') return true;
+    return !groups.includes(saEventGroup(ev));
+  });
+
+  const imported = [];
+  if(groups.includes('national')) imported.push(...buildSaudiEvents(1));
+  if(groups.includes('school')) imported.push(...buildSaudiSchoolEvents());
+  if(groups.includes('salary')) imported.push(...buildSaudiSalaryEvents());
+
+  saveEvents([...remaining, ...imported]);
   refreshAll();
-  toast(`تم استيراد ${sa.length} مناسبة سعودية`,'ok');
+  toast(`تم استيراد ${imported.length} موعداً من الأقسام المحددة`,'ok');
 });
 
 $('saRemove').addEventListener('click', async ()=>{
-  const count = loadEvents().filter(x => x.tag === 'sa').length;
-  if(count === 0){ toast('لا توجد مناسبات سعودية مستوردة','err'); return; }
+  const groups = getSaudiSelectedGroups();
+  if(!groups.length){
+    toast('حدد قسماً واحداً على الأقل للإزالة','err');
+    return;
+  }
+
+  const selectedEvents = loadEvents().filter(ev =>
+    ev?.tag === 'sa' && groups.includes(saEventGroup(ev))
+  );
+  const count = selectedEvents.length;
+
+  if(count === 0){
+    toast('لا توجد مواعيد مستوردة ضمن الأقسام المحددة','err');
+    return;
+  }
+
   const ok = await confirmDialog({
     title:'إزالة المناسبات السعودية',
-    message:`سيتم حذف ${count} مناسبة سعودية مستوردة. أحداثك الشخصية لن تتأثر.`,
+    message:`سيتم حذف ${count} موعداً مستورداً من الأقسام المحددة فقط. أحداثك الشخصية والمشتركة لن تتأثر.`,
     okText:'إزالة',
     danger:true
   });
   if(!ok) return;
-  saveEvents(loadEvents().filter(x => x.tag !== 'sa'));
+
+  saveEvents(loadEvents().filter(ev =>
+    !(ev?.tag === 'sa' && groups.includes(saEventGroup(ev)))
+  ));
   refreshAll();
-  toast(`تم حذف ${count} مناسبة`,'ok');
+  toast(`تم حذف ${count} موعداً مستورداً`,'ok');
 });
+
+initSaudiOptionsUI();
 
 /* بدء التشغيل */
 initFirebase();

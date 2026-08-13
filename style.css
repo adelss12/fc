@@ -406,19 +406,25 @@
 .bottom-bar{
     position:fixed;
     left:0;
-right:0;
-bottom:0;
-height:calc(60px + env(safe-area-inset-bottom));
-padding-bottom:env(safe-area-inset-bottom);
-border-radius:0;
+    right:0;
+    bottom:0;
+
+    height:calc(64px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+
     display:flex;
     justify-content:space-around;
     align-items:center;
-    background:rgba(21,29,46,.95);
-    border:1px solid var(--border);
-    border-radius:16px;
+
+    background:rgba(21,29,46,.98);
+
+    border:0;
+    border-top:1px solid var(--border);
+    border-radius:0;
+
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
+
     z-index:999;
 }
 
@@ -447,10 +453,12 @@ border-radius:0;
     align-items:center;
     gap:6px;
     flex-wrap:nowrap;
-white-space:nowrap;
-font-size:clamp(.68rem, 2.8vw, 1rem);
-        font-weight:700;
+    white-space:nowrap;
     text-align:center;
+    direction:rtl;
+    padding-inline:8px;
+    font-size:clamp(.68rem, 2.8vw, 1rem);
+    font-weight:700;
 }
 .admin-stat.active{
     background:var(--accent);
@@ -466,4 +474,46 @@ font-size:clamp(.68rem, 2.8vw, 1rem);
     padding-top:12px;
     padding-bottom:max(8px, env(safe-area-inset-bottom));
     border-top:1px solid var(--border);
+}
+#appMain{
+    padding-bottom:calc(88px + env(safe-area-inset-bottom));
+}
+@media (max-width:480px){
+    .today-inline-date{
+        font-size:clamp(.56rem, 2.35vw, .78rem);
+        gap:4px;
+        padding-inline:12px;
+    }
+}
+#timeDistanceModal .modal{
+    max-width:460px;
+}
+
+#timeDistanceModal .form-grid{
+    grid-template-columns:1fr;
+}
+
+#timeDistanceModal select,
+#timeDistanceModal input[type="date"]{
+    width:100%;
+    min-width:0;
+}
+
+#timeDistanceModal .tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    width:100%;
+}
+
+#timeDistanceModal .tab{
+    width:100%;
+    text-align:center;
+}
+
+#timeDistanceResult{
+    width:100%;
+}
+
+#timeDistanceModal .modal-actions{
+    justify-content:flex-start;
 }
