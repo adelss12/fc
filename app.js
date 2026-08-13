@@ -2037,9 +2037,9 @@ function renderLists(){
 }
 function refreshAll(){ renderToday(); renderLists(); renderInvites(); }
 
-document.querySelectorAll('.tab').forEach(t=>{
+document.querySelectorAll('.tab[data-tab]').forEach(t=>{
   t.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab[data-tab]').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     $(t.dataset.tab + 'Panel').classList.add('active');
