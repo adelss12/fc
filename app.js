@@ -1514,7 +1514,18 @@ function renderAdminUsers(users){
   const allUsers=(users || []).filter(u=>u && u.uid);
   renderAdminStats(allUsers);
   let filtered = [...allUsers];
-  if(_adminUsersFilter === 'pending') filtered = filtered.filter(u=>u.role !== 'admin' && u.approvalStatus === 'pending');
+  if(_adminUsersFilter === 'pending'){
+  filtered = filtered.filter(
+    u => u.role !== 'admin' && u.approvalStatus === 'pending'
+  );
+}else if(['family', 'work', 'general'].includes(_adminUsersFilter)){
+  filtered = filtered.filter(
+    u =>
+      u.role !== 'admin' &&
+      u.approvalStatus === 'approved' &&
+      normalizeUserCategory(u.category) === _adminUsersFilter
+  );
+}
   filtered = filtered.sort((a,b)=>{
     const order={pending:0,approved:1,disabled:2,rejected:3,deleted:4};
     return (order[a.approvalStatus]??1)-(order[b.approvalStatus]??1) || userVisibleName(a).localeCompare(userVisibleName(b),'ar');
@@ -1592,11 +1603,37 @@ function renderAdminStats(users){
     else if(cat==='general') counts.general++;
   }
   box.innerHTML=`
-    <div class="admin-stat"><strong>${counts.all}</strong><span>👥 المستخدمون</span></div>
-    <div class="admin-stat"><strong>${counts.family}</strong><span>👨‍👩‍👧‍👦 العائلة</span></div>
-    <div class="admin-stat"><strong>${counts.work}</strong><span>💼 العمل</span></div>
-    <div class="admin-stat"><strong>${counts.general}</strong><span>👤 عام</span></div>
-    <div class="admin-stat"><strong>${counts.pending}</strong><span>⏳ طلبات جديدة</span></div>`;
+  <button type="button" class="admin-stat" data-admin-stat-filter="all">
+    <strong>${counts.all}</strong>
+    <span>👥 المستخدمون</span>
+  </button>
+
+  <button type="button" class="admin-stat" data-admin-stat-filter="family">
+    <strong>${counts.family}</strong>
+    <span>👨‍👩‍👧‍👦 العائلة</span>
+  </button>
+
+  <button type="button" class="admin-stat" data-admin-stat-filter="work">
+    <strong>${counts.work}</strong>
+    <span>💼 العمل</span>
+  </button>
+
+  <button type="button" class="admin-stat" data-admin-stat-filter="general">
+    <strong>${counts.general}</strong>
+    <span>👤 عام</span>
+  </button>
+
+  <button type="button" class="admin-stat" data-admin-stat-filter="pending">
+    <strong>${counts.pending}</strong>
+    <span>⏳ طلبات جديدة</span>
+  </button>
+`;
+box.querySelectorAll('[data-admin-stat-filter]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    _adminUsersFilter = btn.dataset.adminStatFilter;
+    renderAdminUsers(users);
+  });
+});
 }
 function addAdminAction(box,text,cls,fn){
   const b=document.createElement('button'); b.type='button'; b.className=`btn ${cls}`; b.textContent=text; b.addEventListener('click',fn); box.appendChild(b);
