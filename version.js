@@ -22,10 +22,10 @@ const APP_INFO = Object.freeze({
     adminEmail: "iadelss12@gmail.com",
 
     // المستودع الرسمي
-    repository: "https://github.com/adelss12/family-calendar",
+    repository: "https://github.com/adelss12/fc",
 
     // موقع المشروع
-    website: "https://adelss12.github.io/family-calendar/",
+    website: "https://adelss12.github.io/fc/",
 
     // آخر تحديث
     lastUpdate: "2026-07-12"
