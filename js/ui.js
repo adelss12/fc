@@ -40,13 +40,15 @@ function download(name, content, type){
 function firstName(u){ return String(displayUser(u) || '').trim().split(/\s+/)[0] || ''; }
 
 /* ---------- النوافذ ---------- */
-function sheet({title, html='', cls=''}){
+function sheet({title, html='', cls='', back=null, footer=''}){
   const d = document.createElement('dialog');
   d.className = `sheet ${cls}`;
   d.innerHTML = `
-    <div class="sheet-h"><i class="grip" aria-hidden="true"></i><h2>${escapeHtml(title)}</h2>
+    <div class="sheet-h"><i class="grip" aria-hidden="true"></i>
+      <div class="sheet-t">${back ? `<button type="button" class="icon-btn back-btn" data-back aria-label="رجوع">${ico('chev-right')}</button>` : ''}<h2>${escapeHtml(title)}</h2></div>
       <button type="button" class="icon-btn" data-close aria-label="إغلاق">${ico('close')}</button></div>
-    <div class="sheet-b">${html}</div>`;
+    <div class="sheet-b">${html}</div>
+    ${footer ? `<div class="sheet-f">${footer}</div>` : ''}`;
   document.body.appendChild(d);
   const api = {
     el:d, body:d.querySelector('.sheet-b'), onClose:null, closed:false,
@@ -60,6 +62,7 @@ function sheet({title, html='', cls=''}){
     qa(sel){ return d.querySelectorAll(sel); }
   };
   d.querySelector('[data-close]').addEventListener('click', ()=> api.close());
+  d.querySelector('[data-back]')?.addEventListener('click', ()=>{ api.close(); setTimeout(back, 200); });
   d.addEventListener('cancel', e=>{ e.preventDefault(); api.close(); });
   d.addEventListener('click', e=>{ if(e.target === d) api.close(); });
   UI.openSheets.add(api);
@@ -553,7 +556,7 @@ function openForm(localId=null, preset={}){
   if(localId && !ev){ toast('لم يُعثر على الموعد', true); return; }
   if(ev && !canEditEvent(ev)){ toast('ليست لديك صلاحية تعديل هذا الموعد', true); return; }
   const cal = ev ? (ev.calType || 'greg') : (preset.cal || 'greg');
-  const s = sheet({title: ev ? 'تعديل الموعد' : 'موعد جديد', html:`
+  const s = sheet({title: ev ? 'تعديل الموعد' : 'موعد جديد', back: ev ? ()=> openDetail(localId) : null, html:`
     <form class="stack" data-form novalidate>
       <label class="field"><span>العنوان</span><input type="text" data-title maxlength="120" placeholder="مثال: زيارة الأهل" required></label>
       <div class="field"><span>التاريخ</span>
@@ -687,14 +690,14 @@ function openDetail(localId, occ){
 async function openShare(localId){
   const ev = findDisplayEvent(localId);
   if(!ev) return;
-  const s = sheet({title:'مشاركة الموعد', html:`
+  const s = sheet({title:'مشاركة الموعد', cls:'tall', back:()=> openDetail(localId), footer:`
+    <p class="form-msg" data-msg></p>
+    <button type="button" class="btn btn-primary btn-block" data-send>إرسال الدعوة</button>`, html:`
     <p class="hint">«${escapeHtml(ev.title)}» — اختر من تريد إرسال الدعوة له. تظهر هنا الحسابات المعتمدة في نفس تصنيفك.</p>
     <div class="field"><span>صلاحية المدعوين</span>
       <div class="seg" data-role><button type="button" class="on" data-r="viewer">مشاهدة فقط</button><button type="button" data-r="editor">مشاهدة وتعديل</button></div></div>
     <div style="display:flex;justify-content:space-between;align-items:center"><span class="hint" data-count></span><button type="button" class="link-btn" data-all>تحديد الكل</button></div>
-    <div class="menu" data-list><div class="empty" style="padding:20px"><p style="margin:0">جارٍ تحميل الأسماء…</p></div></div>
-    <p class="form-msg" data-msg></p>
-    <button type="button" class="btn btn-primary btn-block" data-send>إرسال الدعوة</button>`});
+    <div class="menu" data-list><div class="empty" style="padding:20px"><p style="margin:0">جارٍ تحميل الأسماء…</p></div></div>`});
   let role = 'viewer';
   segBind(s.q('[data-role]'), b=> role = b.dataset.r);
   const list = s.q('[data-list]'), count = s.q('[data-count]');
@@ -753,7 +756,7 @@ function exportIcsAll(){
 
 /* ---------- المناسبات السعودية ---------- */
 function openSaudi(){
-  const s = sheet({title:'المناسبات السعودية', html:`
+  const s = sheet({title:'المناسبات السعودية', back:openTools, html:`
     <p class="hint">اختر الأقسام ثم أضفها أو أزلها. لا تتأثر مواعيدك الشخصية أو المشتركة.</p>
     <div class="menu" data-opts></div>
     <div class="actions">
@@ -788,7 +791,7 @@ function openSaudi(){
 function openDistance(){
   const evs = getDisplayEvents().sort((a,b)=> eventBaseDate(b) - eventBaseDate(a));
   const opts = evs.map(ev => `<option value="${escapeHtml(ev.localRefId || ev.id)}">${escapeHtml(ev.title)} — ${fmtGreg(eventBaseDate(ev))}</option>`).join('');
-  const s = sheet({title:'حساب المدة', html:`
+  const s = sheet({title:'حساب المدة', back:openTools, html:`
     <div class="seg" data-mode><button type="button" class="on" data-m="dates">بين تاريخين</button><button type="button" data-m="events">بين موعدين</button></div>
     <div class="stack" data-dates>
       <div class="card stack"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><b>من</b>
@@ -835,7 +838,7 @@ function openDistance(){
 
 /* ---------- النسخ الاحتياطي ---------- */
 function openBackup(){
-  const s = sheet({title:'النسخ الاحتياطي والاستعادة', html:`
+  const s = sheet({title:'النسخ الاحتياطي والاستعادة', back:openTools, html:`
     <p class="hint">مواعيدك تُحفظ تلقائياً في السحابة. النسخ هنا للاحتياط الإضافي أو للنقل.</p>
     <div class="menu">
       <button type="button" class="menu-item" data-a="create"><span class="mi">${ico('archive')}</span><span class="txt">إنشاء نسخة على هذا الجهاز<small>تُحفظ داخل المتصفح</small></span></button>
@@ -910,7 +913,7 @@ function openAccount(){
       <button type="button" class="menu-item" data-a="reset"><span class="mi">${ico('mail')}</span><span class="txt">إرسال رابط إعادة تعيين كلمة المرور</span></button>
     </div>
     <div class="menu"><button type="button" class="menu-item danger" data-a="out"><span class="mi red">${ico('logout')}</span><span class="txt">تسجيل الخروج</span></button></div>
-    <p class="hint" style="text-align:center">الإصدار ${APP_VERSION} · <a href="../" style="color:var(--primary)">فتح النسخة السابقة</a></p>`});
+    <p class="hint" style="text-align:center">الإصدار ${APP_VERSION} · <a href="old/" style="color:var(--primary)">فتح النسخة السابقة</a></p>`});
   s.body.addEventListener('click', async e=>{
     const a = e.target.closest('[data-a]')?.dataset.a; if(!a) return;
     if(a === 'reset'){
@@ -923,7 +926,7 @@ function openAccount(){
   });
 }
 function openName(){
-  const s = sheet({title:'تعديل الاسم', cls:'small', html:`
+  const s = sheet({title:'تعديل الاسم', cls:'small', back:openAccount, html:`
     <p class="hint">يظهر اسمك داخل التطبيق وفي الدعوات التي ترسلها.</p>
     <label class="field"><span>الاسم الكامل</span><input type="text" data-n value="${escapeHtml(displayUser(Store.user))}" autocomplete="name"></label>
     <p class="form-msg" data-msg></p>
@@ -935,7 +938,7 @@ function openName(){
   });
 }
 function openPassword(){
-  const s = sheet({title:'تغيير كلمة المرور', cls:'small', html:`
+  const s = sheet({title:'تغيير كلمة المرور', cls:'small', back:openAccount, html:`
     <label class="field"><span>كلمة المرور الحالية</span><input type="password" data-o autocomplete="current-password" dir="ltr"></label>
     <label class="field"><span>كلمة المرور الجديدة</span><input type="password" data-n autocomplete="new-password" dir="ltr"></label>
     <label class="field"><span>تأكيد كلمة المرور الجديدة</span><input type="password" data-c autocomplete="new-password" dir="ltr"></label>
@@ -964,7 +967,7 @@ function openAdmin(){
   if(!isAdminUser()) return;
   let filter = 'pending';
   const STATUS = {pending:'بانتظار الموافقة', approved:'معتمد', rejected:'مرفوض', disabled:'معطّل', deleted:'محذوف'};
-  const s = sheet({title:'الإدارة', html:`<div class="chips" data-chips></div><div class="stack" data-list><div class="empty"><p>جارٍ التحميل…</p></div></div>`});
+  const s = sheet({title:'الإدارة', cls:'tall', back:openAccount, html:`<div class="chips sticky-chips" data-chips></div><div class="stack" data-list><div class="empty"><p>جارٍ التحميل…</p></div></div>`});
   let users = [];
   const paint = ()=>{
     const real = users.filter(u => u && u.uid);
@@ -1007,7 +1010,7 @@ function openAdmin(){
   db('directory').once('value').then(sn => { users = Object.values(sn.val() || {}); paint(); })
     .catch(()=>{ s.q('[data-list]').innerHTML = `<div class="empty"><p>تعذر تحميل المستخدمين.</p></div>`; });
   s.body.addEventListener('click', async e=>{
-    const f = e.target.closest('[data-f]'); if(f){ filter = f.dataset.f; paint(); return; }
+    const f = e.target.closest('[data-f]'); if(f){ filter = f.dataset.f; paint(); s.body.scrollTo({top:0}); return; }
     const x = e.target.closest('[data-x]'); if(!x) return;
     const card = x.closest('[data-uid]'), u = users.find(v => v.uid === card.dataset.uid); if(!u) return;
     const cat = card.querySelector('[data-cat]')?.value || normalizeUserCategory(u.category);

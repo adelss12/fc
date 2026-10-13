@@ -1,459 +1,178 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#0b1120" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="التقويم" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<meta name="format-detection" content="telephone=no" />
-<title>جارٍ تحميل التطبيق...</title>
-<!-- إصدار 15: حماية المواعيد من الفقد عند تسجيل الخروج + تخزين Firebase ثابت -->
-<!-- v8: improved event sharing errors and invitation writes -->
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1512" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="التقويم">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<title>التقويم العائلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=21.0.1">
 </head>
 <body>
-<div class="container">
 
-  <!-- شاشة القفل -->
-  <section id="lockScreen" class="lock-screen">
-    <div class="lock-card">
-      <h1 id="lockTitle">التقويم الشخصي</h1>
-      <p id="lockSubtitle">سجّل دخولك إلى حسابك</p>
-      <form id="lockForm" autocomplete="off">
-        <div class="input-row" id="fullNameRow" style="display:none;">
-          <input type="text" id="fullNameInput" data-login-input placeholder="الاسم الكامل" autocomplete="name" />
-        </div>
-        <div class="input-row">
-          <input type="email" id="emailInput" data-login-input placeholder="البريد الإلكتروني" inputmode="email" autocomplete="email" required />
-        </div>
-        <div class="input-row">
-          <input type="password" id="passwordInput" data-login-input placeholder="كلمة المرور" autocomplete="current-password" minlength="6" required />
-        </div>
-        <div class="input-row" id="passwordConfirmRow" style="display:none;">
-          <input type="password" id="passwordConfirmInput" data-login-input placeholder="تأكيد كلمة المرور" autocomplete="new-password" minlength="6" />
-        </div>
-        <button type="submit" class="btn btn-primary full" id="lockBtn">دخول</button>
-        <button type="button" class="btn btn-secondary full" id="createAccountBtn">إنشاء حساب جديد</button>
-        <button type="button" class="btn btn-ghost full" id="resetPasswordBtn">نسيت كلمة المرور؟</button>
-        <div class="otp-hint" id="otpHint">ليس لديك حساب؟ اضغط إنشاء حساب جديد.</div>
-        <div class="err" id="lockErr"></div>
-      </form>
-    </div>
-  </section>
-
-  <!-- التطبيق الرئيسي -->
-  <main id="appMain" style="display:none;">
-    <!-- بطاقة اليوم -->
-    <section class="today-card">
-      <div class="today-inline-date">
-    <span id="todayName"></span>
-    <span>|</span>
-    <span id="todayGreg"></span>
-    <span>الموافق</span>
-    <span id="todayHijri"></span>
-    <span id="todayHijriDay" style="display:none;"></span>
+<!-- شاشة البدء -->
+<div id="boot" class="boot" aria-hidden="true">
+  <div class="boot-moon" id="bootMoon"></div>
 </div>
 
-      <div class="today-welcome" id="welcomeLine">👋 أهلاً، <span id="welcomeName">عادل</span></div>
-      <div class="sync-status" id="syncStatus">☁️ المزامنة جاهزة</div>
-      
-    </section>
-
-    <!-- أزرار سريعة + التبويبات -->
-    <div class="toolbar">
-      <div class="toolbar-side">
-        <div class="user-chip" id="currentUserLabel"></div>
-        <div class="quick-actions">
-          <button class="add-btn" id="openAddBtn" title="إضافة حدث جديد" aria-label="إضافة حدث جديد">+</button>
-          
-          <button class="btn btn-secondary" id="accountBtn" type="button">👤 حسابي</button>
-          <button class="btn btn-secondary" id="adminUsersBtn" type="button" style="display:none;">👥 الإدارة <span class="admin-badge" id="adminPendingBadge" style="display:none;">0</span></button>
-        </div>
+<!-- تسجيل الدخول -->
+<section id="lock" class="lock" hidden>
+  <div class="lock-inner">
+    <div class="lock-head">
+      <div class="lock-moon" id="lockMoon"></div>
+      <h1 class="lock-title">التقويم العائلي</h1>
+      <p class="lock-date" id="lockDate"></p>
+    </div>
+    <form id="authForm" class="auth-form" novalidate>
+      <h2 id="authTitle" class="auth-title">تسجيل الدخول</h2>
+      <label class="field" id="nameField" hidden>
+        <span>الاسم الكامل</span>
+        <input type="text" id="authName" autocomplete="name">
+      </label>
+      <label class="field">
+        <span>البريد الإلكتروني</span>
+        <input type="email" id="authEmail" inputmode="email" autocomplete="email" dir="ltr" required>
+      </label>
+      <label class="field">
+        <span>كلمة المرور</span>
+        <input type="password" id="authPassword" autocomplete="current-password" dir="ltr" minlength="6" required>
+      </label>
+      <label class="field" id="confirmField" hidden>
+        <span>تأكيد كلمة المرور</span>
+        <input type="password" id="authConfirm" autocomplete="new-password" dir="ltr" minlength="6">
+      </label>
+      <p class="form-msg" id="authMsg" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="authSubmit">دخول</button>
+      <div class="auth-links">
+        <button type="button" class="link-btn" id="authSwitch">إنشاء حساب جديد</button>
+        <button type="button" class="link-btn" id="authReset">نسيت كلمة المرور؟</button>
       </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="upcoming">الأحداث القادمة <span class="tab-count" id="upcomingCount">0</span></button>
-        <button class="tab" data-tab="past">الأحداث الفائتة <span class="tab-count" id="pastCount">0</span></button>
-        <button class="tab" data-tab="all">الكل <span class="tab-count" id="allCount">0</span></button>
+    </form>
+  </div>
+</section>
+
+<!-- التطبيق -->
+<div id="app" class="app" hidden>
+  <header class="top">
+    <div class="top-bar">
+      <div class="greet">
+        <span id="greetText"></span>
+        <button type="button" class="sync" id="syncBtn" aria-live="polite"><i class="sync-dot"></i><span id="syncText">متزامن</span></button>
+      </div>
+      <button type="button" class="avatar" id="avatarBtn" aria-label="حسابي"><span id="avatarLetter"></span><b class="badge" id="avatarBadge" hidden></b></button>
+    </div>
+    <div class="today">
+      <div class="today-moon" id="todayMoon"></div>
+      <div class="today-text">
+        <div class="today-hijri" id="todayHijri"></div>
+        <div class="today-greg" id="todayGreg"></div>
       </div>
     </div>
+  </header>
 
-    <!-- قوائم الأحداث -->
-    <section>
-      <div id="upcomingPanel" class="panel active">
-        <div class="events-list" id="upcomingList"></div>
+  <main class="main">
+    <!-- القائمة -->
+    <section id="viewList" class="view">
+      <div id="invites"></div>
+      <div class="list-tools">
+        <label class="search">
+          <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="search" id="searchInput" placeholder="ابحث في المواعيد" aria-label="ابحث في المواعيد">
+        </label>
+        <div class="seg" role="tablist" id="filterSeg">
+          <button type="button" role="tab" data-filter="upcoming" class="on">القادمة <small id="cUp"></small></button>
+          <button type="button" role="tab" data-filter="past">الفائتة <small id="cPast"></small></button>
+          <button type="button" role="tab" data-filter="all">الكل <small id="cAll"></small></button>
+        </div>
       </div>
-      <div id="pastPanel" class="panel">
-        <div class="events-list" id="pastList"></div>
-      </div>
-      <div id="allPanel" class="panel">
-        <div class="events-list" id="allList"></div>
-      </div>
+      <div id="eventList" class="event-list"></div>
     </section>
 
-    <!-- الدعوات الواردة -->
-    <section class="backup-card" id="invitesCard" style="display:none;">
-      <h2>الدعوات الواردة <span class="invite-count" id="inviteCount">0</span></h2>
-      <p>الأحداث التي شاركها مستخدمون آخرون معك. عند القبول ستُضاف نسخة مستقلة إلى تقويمك.</p>
-      <div class="invite-list" id="inviteList"></div>
+    <!-- الشهر -->
+    <section id="viewMonth" class="view" hidden>
+      <div class="month-head">
+        <button type="button" class="icon-btn" id="monthPrev" aria-label="الشهر السابق"><svg class="ico"><use href="#i-chev-right"/></svg></button>
+        <div class="month-title">
+          <h2 id="monthTitle"></h2>
+          <p id="monthSub"></p>
+        </div>
+        <button type="button" class="icon-btn" id="monthNext" aria-label="الشهر التالي"><svg class="ico"><use href="#i-chev-left"/></svg></button>
+      </div>
+      <div class="month-ctrl">
+        <div class="seg seg-sm" id="gridCalSeg">
+          <button type="button" data-cal="greg" class="on">ميلادي</button>
+          <button type="button" data-cal="hijri">هجري</button>
+        </div>
+        <button type="button" class="chip-btn" id="monthToday">اليوم</button>
+      </div>
+      <div class="grid-week" id="gridWeek"></div>
+      <div class="grid" id="monthGrid"></div>
+      <div class="day-panel" id="dayPanel"></div>
     </section>
-
-    
-
-
   </main>
 
-  <!-- مودال حسابي -->
-  <div class="modal-bg" id="accountModal">
-    <div class="modal">
-      <h2>👤 حسابي</h2>
-      <div class="account-summary">
-        <div class="name" id="accountNameLabel">—</div>
-        <div class="email" id="accountEmailLabel">—</div>
-      </div>
-      <div class="account-actions">
-        <button class="btn btn-secondary" id="editProfileBtn">تعديل الاسم</button>
-        <button class="btn btn-secondary" id="changePasswordBtn">تغيير كلمة المرور</button>
-        <button class="btn btn-secondary" id="resetPasswordBtn">إرسال رابط إعادة تعيين كلمة المرور</button>
-        <button class="btn btn-danger" id="changePwBtn">تسجيل الخروج / تبديل المستخدم</button>
-      </div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="accountClose">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال إدارة المستخدمين (للمدير فقط) -->
-  <div class="modal-bg" id="adminUsersModal">
-    <div class="modal wide">
-      <h2>👥 الإدارة</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:8px;">إدارة طلبات التسجيل والمستخدمين وصلاحية ظهورهم في قائمة المشاركة.</p>
-      <div class="admin-stats" id="adminStats"></div>
-      <div class="admin-tabs" role="tablist" aria-label="أقسام الإدارة">
-        <button class="admin-tab active" id="adminTabPending" type="button" data-admin-tab="pending">⏳ الطلبات الجديدة <span class="admin-badge" id="adminPendingBadgeModal" style="display:none;">0</span></button>
-        <button class="admin-tab" id="adminTabAll" type="button" data-admin-tab="all">👥 كل المستخدمين</button>
-      </div>
-      <div class="admin-users-list" id="adminUsersList">
-        <div class="empty" style="padding:14px;">جاري تحميل المستخدمين...</div>
-      </div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="adminUsersClose">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال النسخ -->
-  <div class="modal-bg" id="backupModal">
-    <div class="modal wide">
-      <h2>💾 النسخ</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">احفظ نسخة من جميع أحداثك أو استعدها لاحقاً. يتم التخزين في قاعدة بيانات المتصفح.</p>
-      <div class="backup-actions">
-        <button class="btn btn-primary" id="bkCreate">إنشاء نسخة احتياطية</button>
-        <button class="btn btn-secondary" id="bkExport">تصدير ملف JSON</button>
-        <button class="btn btn-secondary" id="bkExportIcs">📱 تصدير لتقويم الجوال (ICS)</button>
-        <button class="btn btn-warn" id="bkImport">استيراد من ملف JSON</button>
-        <input type="file" id="bkImportFile" accept="application/json" style="display:none;" />
-      </div>
-      <div class="backup-list" id="backupList"></div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="backupClose">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال إضافة/تعديل حدث -->
-  <div class="modal-bg" id="addModal">
-    <div class="modal">
-      <h2 id="formTitle">إضافة حدث جديد</h2>
-      <form id="eventForm">
-        <input type="hidden" id="eventId" />
-        <div class="form-grid">
-          <label>
-            عنوان الحدث
-            <input type="text" id="evTitle" required placeholder="مثال: اجتماع العمل" />
-          </label>
-          <label>
-            نوع التاريخ
-            <select id="evCalType">
-              <option value="greg">ميلادي</option>
-              <option value="hijri">هجري</option>
-            </select>
-          </label>
-          <label id="gregDateLabel">
-            التاريخ الميلادي
-            <input type="date" id="evDate" />
-          </label>
-          <label id="hijriDateLabel" style="display:none;">
-            التاريخ الهجري
-            <div class="hijri-date-row">
-              <select id="evHijriDay" aria-label="اليوم الهجري"></select>
-              <select id="evHijriMonth" aria-label="الشهر الهجري"></select>
-              <select id="evHijriYear" aria-label="السنة الهجرية"></select>
-            </div>
-            <div class="date-help" id="hijriPreview"></div>
-          </label>
-        </div>
-        <div class="modal-actions" style="margin-top:14px;">
-          <button type="button" class="btn btn-ghost" id="addCancelBtn">إلغاء</button>
-          <button type="submit" class="btn btn-primary" id="saveBtn">حفظ الحدث</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- مودال تفاصيل الحدث -->
-  <div class="modal-bg" id="detailModal">
-    <div class="modal">
-      <h2 id="detailTitle">تفاصيل الحدث</h2>
-      <div id="detailBody"></div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="detailClose">إغلاق</button>
-        <button class="btn btn-primary" id="detailShare">مشاركة</button>
-        <button class="btn btn-secondary" id="detailEdit">تعديل</button>
-        <button class="btn btn-danger" id="detailDelete">حذف</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال مشاركة الحدث -->
-  <div class="modal-bg" id="shareModal">
-    <div class="modal">
-      <h2>مشاركة الحدث</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">
-        اختر المستخدمين الذين تريد إرسال الدعوة لهم. يظهر هنا كل مستخدم سجّل دخوله في التطبيق مرة واحدة على الأقل.
-      </p>
-      <div class="share-tools">
-        <button class="btn btn-secondary" id="shareSelectAll" type="button">تحديد الكل</button>
-        <span class="otp-hint" id="shareUserCount"></span>
-      </div>
-      <div class="share-user-list" id="shareUserList">
-        <div class="empty" style="padding:14px;font-size:.85rem;">جاري تحميل المستخدمين...</div>
-      </div>
-      <div class="form-grid" style="margin-bottom:10px;">
-        <label>
-          صلاحية المدعو
-          <select id="shareRole">
-            <option value="viewer">👥 مستخدم مشترك - مشاهدة فقط</option>
-            <option value="editor">✏️ مستخدم مشترك - تعديل</option>
-          </select>
-        </label>
-      </div>
-      <div class="err" id="shareErr"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="shareCancel">إلغاء</button>
-        <button class="btn btn-primary" id="shareSend">إرسال الدعوة</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال المناسبات السعودية -->
-  <div class="modal-bg" id="saModal">
-    <div class="modal">
-      <h2>🇸🇦 المناسبات السعودية</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">
-        استورد المناسبات الوطنية والدينية الرسمية للسنة الحالية، أو أزلها دفعة واحدة دون التأثير على أحداثك الشخصية.
-      </p>
-      <div class="backup-actions sa-actions">
-        <button class="btn btn-primary" id="saImport">استيراد المناسبات السعودية</button>
-        <button class="btn btn-danger" id="saRemove">إزالة المناسبات السعودية</button>
-      </div>
-      <p style="color:var(--muted);font-size:.8rem;margin-top:10px;">
-        تشمل: يوم التأسيس، يوم العلم، اليوم الوطني، رأس السنة الهجرية، بداية رمضان، يوم عرفة، عيدَي الفطر والأضحى.
-      </p>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost" id="saClose">إغلاق</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال تأكيد الحذف -->
-  <div class="modal-bg" id="delModal">
-    <div class="modal">
-      <h2>تأكيد الحذف</h2>
-      <p style="color:var(--muted);margin-bottom:12px;font-size:.9rem;">
-        سيتم حذف هذا الحدث من حساب المستخدم الحالي فقط.
-      </p>
-      <div class="input-row" style="display:none;">
-        <input type="password" id="delPw" placeholder="كلمة المرور" />
-      </div>
-      <div class="err" id="delErr"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="delCancel">إلغاء</button>
-        <button class="btn btn-danger" id="delConfirm">حذف</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال تعديل الملف الشخصي -->
-  <div class="modal-bg" id="profileModal">
-    <div class="modal">
-      <h2>تعديل الاسم</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">سيظهر هذا الاسم داخل التطبيق وعند مشاركة الدعوات.</p>
-      <div class="input-row"><input type="text" id="profileName" placeholder="الاسم الكامل" style="letter-spacing:0;text-align:right;direction:rtl;" /></div>
-      <div class="err" id="profileErr"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="profileCancel">إلغاء</button>
-        <button class="btn btn-primary" id="profileSave">حفظ الاسم</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال تغيير كلمة المرور -->
-  <div class="modal-bg" id="pwModal">
-    <div class="modal">
-      <h2>تغيير كلمة المرور</h2>
-      <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px;">للحماية، أدخل كلمة المرور الحالية ثم الجديدة.</p>
-      <div class="input-row"><input type="password" id="pwOld" placeholder="كلمة المرور الحالية" /></div>
-      <div class="input-row"><input type="password" id="pwNew" placeholder="كلمة المرور الجديدة" /></div>
-      <div class="input-row"><input type="password" id="pwNewConfirm" placeholder="تأكيد كلمة المرور الجديدة" /></div>
-      <div class="err" id="pwErr"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="pwCancel">إلغاء</button>
-        <button class="btn btn-primary" id="pwSave">حفظ كلمة المرور</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- مودال تأكيد عام -->
-  <div class="modal-bg" id="confirmModal">
-    <div class="modal">
-      <h2 id="confirmTitle">تأكيد</h2>
-      <p id="confirmMsg" style="color:var(--muted);font-size:.92rem;margin-bottom:6px;"></p>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button class="btn btn-ghost"  id="confirmCancel">إلغاء</button>
-        <button class="btn btn-primary" id="confirmOk">حسناً</button>
-      </div>
-    </div>
-  </div>
-  <!-- مودال الإعدادات -->
-<div class="modal-bg" id="settingsModal">
-  <div class="modal">
-    <h2>⚙️ الإعدادات</h2>
-
-    <div class="account-actions">
-      <button class="btn btn-secondary" id="settingsBackupBtn">
-        💾 النسخ الاحتياطي والاستعادة
-      </button>
-    </div>
-
-    <div class="modal-actions" style="margin-top:14px;">
-      <button class="btn btn-ghost" id="settingsClose">إغلاق</button>
-    </div>
-  </div>
-</div>
-<!-- مودال حساب البعد الزمني -->
-<div class="modal-bg" id="timeDistanceModal">
-  <div class="modal">
-    <h2>↔️ حساب البعد الزمني</h2>
-
-    <div class="tabs" style="margin-bottom:14px;">
-      <button class="tab active" id="timeModeEventsBtn" type="button">
-        بين حدثين
-      </button>
-
-      <button class="tab" id="timeModeDatesBtn" type="button">
-        بين تاريخين
-      </button>
-    </div>
-
-    <div id="timeEventsSection">
-      <div class="form-grid">
-        <label>
-          الحدث الأول
-          <select id="timeEvent1"></select>
-        </label>
-        <div class="date-help" id="timeEvent1Date"></div>
-
-        <label>
-          الحدث الثاني
-          <select id="timeEvent2"></select>
-        </label>
-        <div class="date-help" id="timeEvent2Date"></div>
-      </div>
-    </div>
-
-    <div id="timeDatesSection" style="display:none;">
-      <div class="form-grid">
-        <label>
-          التاريخ الأول
-          <input type="date" id="timeDate1">
-        </label>
-
-        <label>
-          التاريخ الثاني
-          <input type="date" id="timeDate2">
-        </label>
-      </div>
-    </div>
-
-    <div class="empty" id="timeDistanceResult" style="margin-top:14px;padding:18px;">
-      اختر حدثين أو تاريخين لحساب المدة.
-    </div>
-
-    <div class="modal-actions" style="margin-top:14px;">
-      <button class="btn btn-ghost" id="timeDistanceClose">إغلاق</button>
-      <button class="btn btn-primary" id="timeDistanceCalc">احسب المدة</button>
-    </div>
-  </div>
+  <nav class="tabbar" aria-label="التنقل">
+    <button type="button" class="tab on" data-view="list"><svg class="ico"><use href="#i-list"/></svg><span>المواعيد</span></button>
+    <button type="button" class="tab" data-view="month"><svg class="ico"><use href="#i-cal"/></svg><span>الشهر</span></button>
+    <button type="button" class="tab-add" id="addBtn" aria-label="إضافة موعد"><svg class="ico"><use href="#i-plus"/></svg></button>
+    <button type="button" class="tab" id="toolsBtn"><svg class="ico"><use href="#i-tools"/></svg><span>الأدوات</span></button>
+    <button type="button" class="tab" id="accountBtn"><svg class="ico"><use href="#i-user"/></svg><span>حسابي</span></button>
+  </nav>
 </div>
 
-  <div class="toast" id="toast"></div>
-</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- الأيقونات -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></symbol>
+    <symbol id="i-chev-left" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+    <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H19l-3-3M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H5l3 3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14 3.5V8h5M9 12.5h7M9 16h5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 19.5c.8-3.3 3.3-5 6.5-5s5.7 1.7 6.5 5"/><path d="M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14.8c1.8.6 3 2.2 3.5 4.7"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M8 7.5l4-4 4 4"/><path d="M6 11H5v9.5h14V11h-1"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4.5h12l-2 4 2 4H5"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3.5 12h17M3.5 12l3-3M3.5 12l3 3M20.5 12l-3-3M20.5 12l-3 3"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4.5" rx="1"/><path d="M5 8.5v11h14v-11M10 12.5h4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 5 6v5.5c0 4.3 3 7.6 7 9 4-1.4 7-4.7 7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 4.5H5.5v15H14M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3.5 13.5 6 5h12l2.5 8.5v6h-17z"/><path d="M3.5 13.5H9l1 2h4l1-2h5.5"/></symbol>
+  </defs>
+</svg>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<!-- Project Configuration -->
-<script src="version.js"></script>
-<script src="config.js"></script>
-  
-<!-- Main Application -->
-<script src="app.js" defer></script>
-<!-- الشريط السفلي -->
-<nav class="bottom-bar" id="bottomBar" style="display:none;">
-
-    <button
-    class="bottom-btn active"
-    id="saudiEventsBottomBtn"
-    title="المناسبات السعودية"
-    onclick="$('saModal').classList.add('show')">
-    SA
-</button>
-
-    <button
-    class="bottom-btn"
-    id="settingsBottomBtn"
-    type="button"
-    title="الإعدادات"
-    aria-label="الإعدادات">
-    ⚙️
-</button>
-
-    <button
-    class="bottom-btn"
-    id="timeDistanceBottomBtn"
-    type="button"
-    title="حساب البعد الزمني"
-    aria-label="حساب البعد الزمني">
-    ↔️
-</button>
-
-    <button class="bottom-btn" disabled title="قريبًا">
-        🔔
-    </button>
-    
-
-<button
-    class="bottom-btn"
-    type="button"
-    title="تسجيل الخروج"
-    aria-label="تسجيل الخروج"
-    onclick="doLogout()">
-    ⏻
-</button>
-  </nav>
+<script src="js/core.js?v=21.0.1"></script>
+<script src="js/data.js?v=21.0.1"></script>
+<script src="js/ui.js?v=21.0.1"></script>
 <script src="https://adelss12.github.io/back.js" defer></script>
 </body>
 </html>
