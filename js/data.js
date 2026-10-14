@@ -5,7 +5,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = '21.0.2';
+const APP_VERSION = '21.0.3';
 const LS_USERS   = 'cal_users_v2';
 const LS_SESSION = 'cal_session_user_v2';
 const LS_EVTS_BASE = 'cal_events_v2';

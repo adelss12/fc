@@ -66,7 +66,9 @@ function sheet({title, html='', cls='', back=null, footer=''}){
   d.addEventListener('cancel', e=>{ e.preventDefault(); api.close(); });
   d.addEventListener('click', e=>{ if(e.target === d) api.close(); });
   UI.openSheets.add(api);
+  d.tabIndex = -1;
   d.showModal();
+  d.focus(); // لا نضع التركيز على زر الإغلاق تلقائياً
   return api;
 }
 function confirmSheet({title, message, ok='تأكيد', danger=false}){

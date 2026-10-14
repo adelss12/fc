@@ -294,6 +294,7 @@ dialog.sheet{
   overflow:hidden; display:flex; flex-direction:column;
 }
 dialog.sheet:not([open]){ display:none; }
+dialog.sheet:focus{ outline:none; }
 dialog.sheet::backdrop{ background:rgba(8,16,13,.45); }
 dialog.sheet[open]{ animation:sheetUp .28s cubic-bezier(.2,.8,.2,1); }
 dialog.sheet.closing{ animation:sheetDown .2s ease-in forwards; }
