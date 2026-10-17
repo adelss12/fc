@@ -40,6 +40,8 @@ function download(name, content, type){
 function firstName(u){ return String(displayUser(u) || '').trim().split(/\s+/)[0] || ''; }
 
 /* ---------- النوافذ ---------- */
+/* منع تمرير الصفحة الخلفية ما دامت نافذة مفتوحة */
+function lockScroll(){ document.documentElement.classList.toggle('modal-open', UI.openSheets.size > 0); }
 function sheet({title, html='', cls='', back=null, footer=''}){
   const d = document.createElement('dialog');
   d.className = `sheet ${cls}`;
@@ -56,7 +58,7 @@ function sheet({title, html='', cls='', back=null, footer=''}){
       if(api.closed) return;
       api.closed = true;
       d.classList.add('closing');
-      setTimeout(()=>{ try{ d.close(); }catch(e){} d.remove(); UI.openSheets.delete(api); api.onClose?.(); }, 190);
+      setTimeout(()=>{ try{ d.close(); }catch(e){} d.remove(); UI.openSheets.delete(api); lockScroll(); api.onClose?.(); }, 190);
     },
     q(sel){ return d.querySelector(sel); },
     qa(sel){ return d.querySelectorAll(sel); }
@@ -68,6 +70,7 @@ function sheet({title, html='', cls='', back=null, footer=''}){
   UI.openSheets.add(api);
   d.tabIndex = -1;
   d.showModal();
+  lockScroll();
   d.focus(); // لا نضع التركيز على زر الإغلاق تلقائياً
   return api;
 }
