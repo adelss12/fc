@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21.0.3">
+<link rel="stylesheet" href="style.css?v=21.1.0">
 </head>
 <body>
 
@@ -58,6 +58,21 @@
         <button type="button" class="link-btn" id="authSwitch">إنشاء حساب جديد</button>
         <button type="button" class="link-btn" id="authReset">نسيت كلمة المرور؟</button>
       </div>
+    </form>
+    <form id="resetForm" class="auth-form" novalidate hidden>
+      <h2 class="auth-title">تعيين كلمة مرور جديدة</h2>
+      <p class="reset-for">للحساب: <b id="resetEmail" dir="ltr"></b></p>
+      <label class="field">
+        <span>كلمة المرور الجديدة <button type="button" class="link-btn pw-toggle" data-pw-toggle="resetPw">إظهار</button></span>
+        <input type="password" id="resetPw" autocomplete="new-password" dir="ltr" minlength="6" required>
+      </label>
+      <label class="field">
+        <span>تأكيد كلمة المرور الجديدة</span>
+        <input type="password" id="resetConfirm" autocomplete="new-password" dir="ltr" minlength="6" required>
+      </label>
+      <p class="form-msg" id="resetMsg" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="resetSubmit">حفظ كلمة المرور</button>
+      <div class="auth-links"><button type="button" class="link-btn" id="resetBack">رجوع لتسجيل الدخول</button></div>
     </form>
   </div>
 </section>
@@ -170,9 +185,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="js/core.js?v=21.0.3"></script>
-<script src="js/data.js?v=21.0.3"></script>
-<script src="js/ui.js?v=21.0.3"></script>
+<script src="js/core.js?v=21.1.0"></script>
+<script src="js/data.js?v=21.1.0"></script>
+<script src="js/ui.js?v=21.1.0"></script>
 <script src="https://adelss12.github.io/back.js" defer></script>
 </body>
 </html>

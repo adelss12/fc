@@ -158,7 +158,11 @@ function authErrorMessage(ex){
     'auth/requires-recent-login':'للحماية سجّل الدخول من جديد ثم أعد المحاولة.',
     'auth/network-request-failed':'لا يوجد اتصال بالإنترنت. تحقق من الشبكة.',
     'auth/unauthorized-domain':'هذا النطاق غير مصرح به في Firebase Authentication.',
-    'auth/operation-not-allowed':'فعّل Email/Password من Firebase Authentication.'
+    'auth/operation-not-allowed':'فعّل Email/Password من Firebase Authentication.',
+    'auth/expired-action-code':'انتهت صلاحية رابط إعادة التعيين. اطلب رابطاً جديداً من «نسيت كلمة المرور؟».',
+    'auth/invalid-action-code':'الرابط غير صالح أو استُخدم من قبل. اطلب رابطاً جديداً من «نسيت كلمة المرور؟».',
+    'auth/user-disabled':'هذا الحساب موقوف. تواصل مع المدير.',
+    'auth/missing-email':'اكتب بريدك الإلكتروني أولاً.'
   })[ex?.code] || ex?.message || 'تعذر إكمال العملية. حاول مرة أخرى.';
 }
 
@@ -204,8 +208,24 @@ const Auth = {
   },
   async resetPassword(email){
     email = normalizeIdentifier(email);
-    if(!isValidEmail(email)) throw {message:'اكتب بريدك الإلكتروني أولاً.'};
-    await firebase.auth().sendPasswordResetEmail(email);
+    if(!isValidEmail(email)) throw {message:'اكتب بريدك الإلكتروني في الخانة أعلاه أولاً، ثم اضغط «نسيت كلمة المرور؟».'};
+    firebase.auth().languageCode = 'ar';                       // رسالة البريد بالعربية
+    const url = location.origin + location.pathname;            // زر «متابعة» في الرسالة يعيد إلى التقويم
+    try{ await firebase.auth().sendPasswordResetEmail(email, {url, handleCodeInApp:false}); }
+    catch(ex){
+      if(/continue-uri|unauthorized-domain/.test(ex?.code || '')) await firebase.auth().sendPasswordResetEmail(email);
+      else throw ex;
+    }
+  },
+  /* فتح رابط إعادة التعيين داخل التقويم نفسه (?mode=resetPassword&oobCode=...) */
+  async checkResetCode(code){
+    firebase.auth().languageCode = 'ar';
+    return firebase.auth().verifyPasswordResetCode(code);      // يعيد البريد صاحب الرابط
+  },
+  async confirmReset(code, pw, confirm){
+    if(!pw || pw.length < 6) throw {code:'auth/weak-password'};
+    if(pw !== confirm) throw {message:'تأكيد كلمة المرور غير مطابق.'};
+    await firebase.auth().confirmPasswordReset(code, pw);
   },
   async updateName(name){
     name = String(name || '').trim();

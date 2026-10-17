@@ -423,3 +423,9 @@ body:has(dialog[open]) .toast{ bottom:calc(env(safe-area-inset-bottom) + 24px); 
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+/* تعيين كلمة مرور جديدة */
+.reset-for{ margin:0; color:var(--ink-2); font-size:14px; }
+.reset-for b{ color:inherit; font-weight:700; }
+.field .pw-toggle{ float:left; padding:0 4px; font-size:13px; }
+.form-msg{ white-space:pre-line; }

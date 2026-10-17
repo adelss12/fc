@@ -214,12 +214,81 @@ $('authForm').addEventListener('submit', async e=>{
   }
 });
 $('authSwitch').addEventListener('click', ()=> setAuthMode(authMode === 'signup' ? 'login' : 'signup'));
+/* نسيت كلمة المرور: يرسل رابطاً إلى البريد، مع مهلة 60 ثانية بين كل إرسال */
+let resetWait = 0, resetTimer = null;
 $('authReset').addEventListener('click', async ()=>{
+  if(resetWait > 0) return;
+  const btn = $('authReset');
+  if(!$('authEmail').value.trim()){
+    setAuthMsg('اكتب بريدك الإلكتروني في الخانة أعلاه، ثم اضغط «نسيت كلمة المرور؟» مرة أخرى.');
+    $('authEmail').focus();
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'جارٍ الإرسال…';
   try{
     await Auth.resetPassword($('authEmail').value);
-    setAuthMsg('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك.', true);
-  }catch(ex){ setAuthMsg(errText(ex)); }
+    setAuthMsg('أرسلنا رابط تعيين كلمة مرور جديدة إلى بريدك (إن كان مسجلاً لدينا). افتح الرسالة واضغط الرابط.\nلم تصل خلال دقائق؟ تحقق من مجلد «البريد المزعج / Spam».', true);
+    resetWait = 60;
+    const tick = ()=>{
+      if(resetWait <= 0){ clearInterval(resetTimer); btn.disabled = false; btn.textContent = 'نسيت كلمة المرور؟'; return; }
+      btn.textContent = `إعادة الإرسال بعد ${resetWait--} ث`;
+    };
+    tick(); resetTimer = setInterval(tick, 1000);
+  }catch(ex){
+    setAuthMsg(errText(ex));
+    btn.disabled = false; btn.textContent = 'نسيت كلمة المرور؟';
+  }
 });
+
+/* صفحة تعيين كلمة المرور الجديدة عند فتح الرابط من البريد */
+const AUTH_ACTION = (()=>{
+  const q = new URLSearchParams(location.search);
+  return q.get('mode') === 'resetPassword' && q.get('oobCode') ? {code:q.get('oobCode')} : null;
+})();
+function clearActionUrl(){ try{ history.replaceState(null, '', location.pathname); }catch(e){} }
+function setResetMsg(t, ok=false){ const m = $('resetMsg'); m.textContent = t; m.classList.toggle('ok', ok); }
+async function showResetScreen(){
+  showLock();
+  $('authForm').hidden = true;
+  $('resetForm').hidden = false;
+  $('resetSubmit').disabled = true;
+  setResetMsg('جارٍ التحقق من الرابط…', true);
+  try{
+    const email = await Auth.checkResetCode(AUTH_ACTION.code);
+    AUTH_ACTION.email = email;
+    $('resetEmail').textContent = email;
+    setResetMsg('');
+    $('resetSubmit').disabled = false;
+    $('resetPw').focus();
+  }catch(ex){
+    setResetMsg(errText(ex));
+    $('resetPw').disabled = $('resetConfirm').disabled = true;
+  }
+}
+function backToLogin(email, msg, ok){
+  clearActionUrl();
+  $('resetForm').hidden = true;
+  $('authForm').hidden = false;
+  setAuthMode('login');
+  if(email) $('authEmail').value = email;
+  if(msg) setAuthMsg(msg, ok);
+  $(email ? 'authPassword' : 'authEmail').focus();
+}
+$('resetForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const btn = $('resetSubmit'); btn.disabled = true; btn.textContent = 'جارٍ الحفظ…';
+  try{
+    await Auth.confirmReset(AUTH_ACTION.code, $('resetPw').value, $('resetConfirm').value);
+    $('resetPw').value = $('resetConfirm').value = '';
+    backToLogin(AUTH_ACTION.email, 'تم تغيير كلمة المرور بنجاح ✓ سجّل الدخول بكلمة المرور الجديدة.', true);
+  }catch(ex){ setResetMsg(errText(ex)); }
+  finally{ btn.disabled = false; btn.textContent = 'حفظ كلمة المرور'; }
+});
+$('resetBack').addEventListener('click', ()=> backToLogin('', ''));
+document.querySelectorAll('[data-pw-toggle]').forEach(b => b.addEventListener('click', ()=>{
+  const i = $(b.dataset.pwToggle); const show = i.type === 'password';
+  i.type = show ? 'text' : 'password'; b.textContent = show ? 'إخفاء' : 'إظهار';
+}));
 
 async function enter(user){
   if(UI.entering === user.id) return;
@@ -1058,6 +1127,12 @@ function openAdmin(){
   $('bootMoon').innerHTML = moonSvg(h?.day || 1, 72);
   setMonthFromDate(new Date(), 'greg');
   let decided = false;
+  if(AUTH_ACTION){                       // فُتح التقويم من رابط «إعادة تعيين كلمة المرور»
+    initFirebase(()=>{});
+    if(Store.fbReady){ firebase.auth().signOut().catch(()=>{}); showResetScreen(); }
+    else showLock();
+    return;
+  }
   initFirebase((user, msg)=>{
     if(user){ decided = true; enter(user).catch(e=>{ console.error(e); showLock(); }); }
     else if(!Store.user){ decided = true; showLock(msg || ''); }
