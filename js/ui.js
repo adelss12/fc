@@ -1049,7 +1049,9 @@ function openAdmin(){
       work:appr.filter(u => normalizeUserCategory(u.category) === 'work').length,
       general:appr.filter(u => normalizeUserCategory(u.category) === 'general').length };
     const chip = (k, t) => `<button type="button" class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${t} <b>${c[k]}</b></button>`;
-    s.q('[data-chips]').innerHTML = chip('pending','طلبات جديدة') + chip('all','الكل') + chip('family','عائلة') + chip('work','عمل') + chip('general','عام');
+    c.accounts = accounts ? accounts.length : '…';
+    s.q('[data-chips]').innerHTML = chip('pending','طلبات جديدة') + chip('all','الكل') + chip('family','عائلة') + chip('work','عمل') + chip('general','عام') + chip('accounts','حسابات الدخول');
+    if(filter === 'accounts'){ paintAccounts(); return; }
     let list = real;
     if(filter === 'pending') list = notAdmin.filter(u => u.approvalStatus === 'pending');
     else if(filter !== 'all') list = appr.filter(u => normalizeUserCategory(u.category) === filter);
@@ -1076,6 +1078,65 @@ function openAdmin(){
       </div>`;
     }).join('');
   };
+  /* حسابات الدخول في Firebase Authentication: حذف نهائي وتعطيل عبر الخادم */
+  let accounts = null, accErr = '';
+  const loadAccounts = async ()=>{
+    if(!Accounts.ready()) return;
+    try{ accounts = await Accounts.list(); accErr = ''; }catch(ex){ accounts = []; accErr = errText(ex); }
+    if(!s.closed) paint();
+  };
+  const fmtD = t => t ? new Date(t).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn', {day:'numeric', month:'short', year:'numeric'}) : '—';
+  function paintAccounts(){
+    const box = s.q('[data-list]');
+    if(!Accounts.ready()){
+      box.innerHTML = `<div class="empty"><p>حذف الحسابات نهائياً يحتاج خادماً صغيراً (مرة واحدة).<br>اتبع خطوات الإعداد في الملف worker/accounts-worker.js ثم ضع رابطه في ACCOUNTS_API.</p></div>`;
+      return;
+    }
+    if(accounts === null){ box.innerHTML = `<div class="empty"><p>جارٍ تحميل الحسابات…</p></div>`; return; }
+    if(accErr){ box.innerHTML = `<div class="empty"><p>${escapeHtml(accErr)}</p><button type="button" class="btn btn-soft" data-acc-reload>إعادة المحاولة</button></div>`; return; }
+    const byEmail = {};
+    users.forEach(u => { if(u?.identifier) byEmail[String(u.identifier).toLowerCase()] = u; });
+    const list = accounts.slice().sort((a, b)=> b.created - a.created);
+    box.innerHTML = `<p class="sub" style="margin:0 2px">${list.length} حساب في Firebase. «حذف نهائي» يزيل الحساب ومواعيده ولا يمكن التراجع عنه.</p>` + list.map(a=>{
+      const adm = a.email.toLowerCase() === ADMIN_EMAIL;
+      const d = byEmail[a.email.toLowerCase()];
+      const st = a.disabled ? 'disabled' : (d?.approvalStatus || (d ? 'approved' : 'none'));
+      const label = adm ? 'مدير' : a.disabled ? 'معطّل في Firebase' : d ? (STATUS[st] || 'معتمد') : 'بلا ملف في التقويم';
+      return `<div class="user-card" data-acc="${escapeHtml(a.uid)}">
+        <div class="uh"><div style="min-width:0"><div class="un">${adm ? '👑 ' : ''}${escapeHtml(a.name || (d ? userVisibleName(d) : '') || a.email.split('@')[0])}</div><div class="ue">${escapeHtml(a.email)}</div>
+          <div class="ue">أُنشئ ${fmtD(a.created)} · آخر دخول ${fmtD(a.lastLogin)}</div></div>
+          <span class="status ${st === 'none' ? 'rejected' : st}">${label}</span></div>
+        ${adm ? '' : `<div class="ua">
+          <button type="button" class="btn ${a.disabled ? 'btn-soft' : 'btn-line'}" data-acc-x="${a.disabled ? 'enable' : 'disable'}">${a.disabled ? 'تفعيل الدخول' : 'إيقاف الدخول'}</button>
+          <button type="button" class="btn btn-danger" data-acc-x="delete">حذف نهائي</button></div>`}
+      </div>`;
+    }).join('');
+  }
+  s.body.addEventListener('click', async e=>{
+    if(e.target.closest('[data-acc-reload]')){ accounts = null; paint(); loadAccounts(); return; }
+    const x = e.target.closest('[data-acc-x]'); if(!x) return;
+    const a = (accounts || []).find(v => v.uid === x.closest('[data-acc]').dataset.acc); if(!a) return;
+    const who = a.name || a.email;
+    const d = users.find(u => String(u?.identifier || '').toLowerCase() === a.email.toLowerCase());
+    try{
+      if(x.dataset.accX === 'delete'){
+        if(!await confirmSheet({title:'حذف الحساب نهائياً', message:`سيُحذف حساب ${who} (${a.email}) من Firebase مع مواعيده ودعواته، ولن يستطيع الدخول. يمكنه لاحقاً إنشاء حساب جديد ويحتاج موافقتك. لا يمكن التراجع.`, ok:'حذف نهائي', danger:true})) return;
+        x.disabled = true;
+        await Accounts.remove(a, d);
+        accounts = accounts.filter(v => v.uid !== a.uid);
+        toast('حُذف الحساب نهائياً');
+      }else{
+        const off = x.dataset.accX === 'disable';
+        if(off && !await confirmSheet({title:'إيقاف الدخول', message:`إيقاف دخول ${who}؟ تبقى بياناته ويمكنك إعادة تفعيله.`, ok:'إيقاف', danger:true})) return;
+        await Accounts.disable(a.uid, off);
+        a.disabled = off;
+        toast(off ? 'أُوقف دخول الحساب' : 'فُعّل دخول الحساب');
+      }
+      paint();
+    }catch(ex){ x.disabled = false; toast(errText(ex), true); }
+  });
+  loadAccounts();
+
   UI.adminRefresh = list => { users = list; if(!s.closed) paint(); };
   s.onClose = ()=>{ UI.adminRefresh = null; };
   db('directory').once('value').then(sn => { users = Object.values(sn.val() || {}); paint(); })
@@ -1094,7 +1155,7 @@ function openAdmin(){
     };
     try{
       if(act === 'wipe'){
-        if(!await confirmSheet({title:'مسح بيانات المستخدم', message:`ستُمسح مواعيد ودعوات ${userVisibleName(u)} ويُمنع من الدخول. حسابه في Firebase Authentication يبقى حتى تحذفه من لوحة Firebase.`, ok:'مسح البيانات', danger:true})) return;
+        if(!await confirmSheet({title:'مسح بيانات المستخدم', message:`ستُمسح مواعيد ودعوات ${userVisibleName(u)} ويُمنع من الدخول. لحذف حسابه نهائياً استخدم تبويب «حسابات الدخول».`, ok:'مسح البيانات', danger:true})) return;
         await deleteManagedUserData(u); toast('مُسحت البيانات ومُنع الدخول');
       }else{
         const [chg, word, danger, done] = ACTS[act];

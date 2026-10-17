@@ -5,12 +5,14 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = '21.0.3';
+const APP_VERSION = '21.2.0';
 const LS_USERS   = 'cal_users_v2';
 const LS_SESSION = 'cal_session_user_v2';
 const LS_EVTS_BASE = 'cal_events_v2';
 const LS_INVITES = 'cal_shared_invites_v1';
 const ADMIN_EMAIL = 'iadelss12@gmail.com';
+// رابط خادم إدارة الحسابات (Cloudflare Worker — انظر worker/accounts-worker.js). فارغ = غير مُعدّ بعد
+const ACCOUNTS_API = '';
 const USER_CATEGORIES = { family:'عائلة', work:'عمل', general:'عام', hidden:'مخفي' };
 
 const FIREBASE_CONFIG = {
@@ -697,6 +699,34 @@ async function deleteManagedUserData(u){
   for(const cat of ['family','work','general','hidden']) await db(`groupDirectories/${cat}/${u.uid}`).remove();
   return true;
 }
+
+/* ---------- حسابات الدخول (Firebase Authentication) عبر الخادم ---------- */
+const Accounts = {
+  ready(){ return Boolean(ACCOUNTS_API); },
+  async call(body){
+    if(!isAdminUser() || !firebase.auth().currentUser) throw {message:'هذه الصفحة للمدير فقط.'};
+    const idToken = await firebase.auth().currentUser.getIdToken();
+    let r;
+    try{
+      r = await fetch(ACCOUNTS_API, {method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${idToken}`}, body:JSON.stringify(body)});
+    }catch(e){ throw {message:'تعذر الاتصال بخادم الحسابات. تحقق من الإنترنت.'}; }
+    const j = await r.json().catch(()=> ({}));
+    if(!r.ok) throw {message:j.message || ({forbidden:'هذا الإجراء للمدير فقط.', not_configured:'الخادم يحتاج السر SERVICE_ACCOUNT.'})[j.error] || `تعذر تنفيذ الطلب (${r.status}).`};
+    return j;
+  },
+  list(){ return this.call({action:'list'}).then(j => j.users || []); },
+  disable(uid, disabled){ return this.call({action:'disable', uid, disabled}); },
+  async remove(user, dirEntry){
+    await this.call({action:'delete', uid:user.uid});
+    // تنظيف بياناته من قاعدة البيانات (إن سمحت الصلاحيات)
+    const quiet = async path => { try{ await db(path).remove(); }catch(e){} };
+    await quiet(`users/${user.uid}`);
+    await quiet(`publicDirectory/${user.uid}`);
+    for(const cat of ['family','work','general','hidden']) await quiet(`groupDirectories/${cat}/${user.uid}`);
+    const ident = dirEntry?.identifier || user.email;
+    if(ident) await quiet(`directory/${identifierKey(ident)}`);
+  }
+};
 
 /* ---------- النسخ الاحتياطي (نفس قاعدة البيانات السابقة) ---------- */
 const Backup = {
