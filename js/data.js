@@ -5,14 +5,14 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = '21.2.0';
+const APP_VERSION = '21.2.1';
 const LS_USERS   = 'cal_users_v2';
 const LS_SESSION = 'cal_session_user_v2';
 const LS_EVTS_BASE = 'cal_events_v2';
 const LS_INVITES = 'cal_shared_invites_v1';
 const ADMIN_EMAIL = 'iadelss12@gmail.com';
 // رابط خادم إدارة الحسابات (Cloudflare Worker — انظر worker/accounts-worker.js). فارغ = غير مُعدّ بعد
-const ACCOUNTS_API = '';
+const ACCOUNTS_API = 'https://fc-accounts.iadelss12.workers.dev/';
 const USER_CATEGORIES = { family:'عائلة', work:'عمل', general:'عام', hidden:'مخفي' };
 
 const FIREBASE_CONFIG = {
